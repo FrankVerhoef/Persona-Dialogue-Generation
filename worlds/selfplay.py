@@ -218,7 +218,7 @@ class SelfPlayWorld(DialogPartnerWorld):
                 else:
                     history_reward = np.stack([agent_b_persona_reward, agent_a_persona_reward], axis=2)
                 # view as a whole
-                history_reward = history_reward.reshape((batch_size, -1))
+                history_reward = torch.reshape(history_reward, (batch_size, -1))
                 discount_rewards = []
 
                 dialog_size = len(history_reward[0])
@@ -232,7 +232,7 @@ class SelfPlayWorld(DialogPartnerWorld):
                 discount_rewards = np.array(discount_rewards)
                 # discount_rewards as step_size x batch_size
                 discount_rewards = np.transpose(discount_rewards)
-                discount_rewards = discount_rewards.reshape((batch_size, turn_size, 2))
+                discount_rewards = torch.reshape(discount_rewards, (batch_size, turn_size, 2))
 
                 agent_a_persona_reward = discount_rewards[:, :, 0]
                 agent_b_persona_reward = discount_rewards[:, :, 1]

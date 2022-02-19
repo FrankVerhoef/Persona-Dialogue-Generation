@@ -29,7 +29,7 @@ class EmbeddingDropout():
                 x = np.unique(input[i].numpy())
                 x = np.nonzero(x)[0]
                 x = torch.from_numpy(x)
-                noise = x.new().resize_as_(x)
+                noise = torch.zeros_like(x)
                 noise.bernoulli_(self.p)
                 x = x.mul(noise)
                 for value in x:
@@ -53,7 +53,7 @@ class SequentialDropout(nn.Module):
         self.restart = True
 
     def _make_noise(self, input):
-        return input.new().resize_as_(input)
+        return torch.empty_like(input)
 
     def forward(self, input):
         if self.p > 0 and self.training:

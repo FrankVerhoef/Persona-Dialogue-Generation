@@ -131,14 +131,14 @@ class TransformerMemNetModel(nn.Module):
         # flatten if there are many candidates
         if words.dim() == 3:
             oldshape = words.shape
-            words = words.reshape(oldshape[0] * oldshape[1], oldshape[2])
+            words = torch.reshape(words, (oldshape[0] * oldshape[1], oldshape[2]))
         else:
             oldshape = None
 
         encoded = self.cand_encoder(words)
 
         if oldshape is not None:
-            encoded = encoded.reshape(oldshape[0], oldshape[1], -1)
+            encoded = torch.reshape(encoded, (oldshape[0], oldshape[1], -1))
 
         return encoded
 
