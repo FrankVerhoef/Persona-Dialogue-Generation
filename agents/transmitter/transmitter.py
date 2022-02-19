@@ -42,7 +42,7 @@ def print_model(model):
             for j in i.size():
                 l *= j
             k = k + l
-    print("Total Parameter Size：" + str(k))
+    print("Total Parameter Size: " + str(k))
 
 
 def transformer_args(agent_args):
