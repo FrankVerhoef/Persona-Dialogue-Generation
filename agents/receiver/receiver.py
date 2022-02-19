@@ -1279,10 +1279,14 @@ class BertWrapper(torch.nn.Module):
         self.bert_model.embeddings.token_type_embeddings.weight.requires_grad = False
 
     def forward(self, token_ids, segment_ids, attention_mask):
-        output_bert, output_pooler = self.bert_model(
-            token_ids, segment_ids, attention_mask)
-        # output_bert is a list of 12 (for bert base) layers.
-        layer_of_interest = output_bert[self.layer_pulled]
+        output_bert = self.bert_model(
+            input_ids = token_ids, 
+            token_type_ids = segment_ids, 
+            attention_mask = attention_mask, 
+            output_hidden_states = True
+        )
+        # output_bert['hidden_states'] is a list of 12 (for bert base) layers.
+        layer_of_interest = output_bert['hidden_states'][self.layer_pulled]
         if self.add_transformer_layer:
             # Follow up by yet another transformer layer
             extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)

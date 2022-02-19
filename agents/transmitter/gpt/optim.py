@@ -47,9 +47,10 @@ class GPTOptimizer:
             lr=opt['gpt_lr'],
             correct_bias=False
         )
+        t_total = opt.get('optimizer_step', None)
         scheduler = get_linear_schedule_with_warmup(
             optimizer,
-            num_warmup_steps=opt['warmup_proportion'], 
+            num_warmup_steps=opt['warmup_proportion'] * t_total if t_total != None else None,
             num_training_steps=opt.get('optimizer_step', None)
         )
         self.optimizer = optimizer
