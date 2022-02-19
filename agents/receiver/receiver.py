@@ -915,7 +915,7 @@ class ReceiverEncoder(nn.Module):
         if reduce:
             # if reduce, we should find the xs_ends
             xs_mask = xs_mask.unsqueeze(-1).expand_as(encode_output)
-            one_minus_mask = (1.0 - xs_mask).byte()
+            one_minus_mask = (1.0 - xs_mask).bool()
             # masked mean value
             replaced_vector = encode_output.masked_fill(one_minus_mask, 0.0)
             value_sum = torch.sum(replaced_vector, dim=1)
@@ -1004,7 +1004,7 @@ class ReceiverEncoder(nn.Module):
             grid_mask = whole_mask.view(persona_shape[0], persona_shape[1], dialogue_shape[1], persona_shape[2]) \
                 .detach().cpu().numpy()
             # whole_mask = whole_mask.view(-1, dialogue_shape[1] * persona_shape[2])
-            one_minus_mask = (1.0 - whole_mask).byte()
+            one_minus_mask = (1.0 - whole_mask).bool()
 
             # masked mean value
             replaced_vector = feature_map.masked_fill(one_minus_mask, 0.0)
