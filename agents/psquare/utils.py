@@ -4,7 +4,7 @@ from agents.common.dict_helper import SpecialToken
 import torch.nn.functional as F
 from agents.transmitter.transmitter import Gpt2SeqModel
 import numpy as np
-from pytorch_pretrained_bert import OpenAIGPTLMHeadModel
+from transformers import OpenAIGPTLMHeadModel
 
 
 def _length_penalty(sequence_lengths):

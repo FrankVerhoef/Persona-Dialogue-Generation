@@ -1,4 +1,4 @@
-from pytorch_pretrained_bert import OpenAIAdam
+from transformers import AdamW, get_linear_schedule_with_warmup
 from parlai.core.utils import _ellipse
 
 
@@ -42,12 +42,18 @@ class GPTOptimizer:
         print('The following parameters will be optimized NORMALLY:')
         print(_ellipse(base_parameters_names, 5, ' , '))
 
-        optimizer = OpenAIAdam(optimizer_grouped_parameters,
-                               lr=opt['gpt_lr'],
-                               warmup=opt['warmup_proportion'],
-                               max_grad_norm=opt['gradient_clip'],
-                               t_total=opt.get('optimizer_step', -1))
+        optimizer = AdamW(
+            optimizer_grouped_parameters,
+            lr=opt['gpt_lr'],
+            correct_bias=False
+        )
+        scheduler = get_linear_schedule_with_warmup(
+            optimizer,
+            num_warmup_steps=opt['warmup_proportion'], 
+            num_training_steps=opt.get('optimizer_step', None)
+        )
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def state_dict(self):
         return {'optimizer': self.optimizer.state_dict()}
@@ -64,3 +70,4 @@ class GPTOptimizer:
 
     def step(self):
         self.optimizer.step()
+        self.scheduler.step()

@@ -10,7 +10,7 @@ from parlai.core.agents import Agent
 from parlai.core.build_data import modelzoo_path
 from parlai.core.dict import DictionaryAgent
 from parlai.core.utils import PaddingUtils, round_sigfigs
-from pytorch_pretrained_bert import BertModel
+from transformers import BertModel
 from torch import nn
 from torch import optim
 import json

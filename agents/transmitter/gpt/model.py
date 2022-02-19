@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch_pretrained_bert import OpenAIGPTLMHeadModel
+from transformers import OpenAIGPTLMHeadModel
 
 
 class Gpt2SeqModel(nn.Module):
@@ -24,8 +24,8 @@ class Gpt2SeqModel(nn.Module):
         special_token_len += 30
         self.vocab_size += 29
         # regard input and output as one sentence, given the input as context, generate the next sentence.
-        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt',
-                                                                       num_special_tokens=special_token_len)
+        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt', return_dict=True)
+        self.transformer_module.resize_token_embeddings(self.vocab_size)
         self.pad_idx = pad_idx
         self.start_idx = start_idx
         self.end_idx = end_idx
@@ -88,7 +88,9 @@ class Gpt2SeqModel(nn.Module):
                 dis_seq = torch.tensor(token_type_ids, device=input_seq.device, dtype=torch.long)
             else:
                 dis_seq = None
-            lm_logits, hidden_states = self.transformer_module(input_seq, None, dis_seq)
+            output = self.transformer_module(input_seq, None, dis_seq, output_hidden_states=True)
+            lm_logits = output.logits
+            hidden_states = torch.stack(list(output.hidden_states), dim=0)
             # lm labels should mask the source sentence language model
             shift_logits = lm_logits[..., src_seq_len:-1, :].contiguous()
             # lm_labels = tgt_seq.clone()[..., 1:].contiguous()
@@ -96,7 +98,7 @@ class Gpt2SeqModel(nn.Module):
             scores = shift_logits
             pos_seq_len = src_seq_len + tgt_seq.ne(self.pad_idx).sum(dim=1, keepdim=True)
             pos_seq_len_expand = pos_seq_len.unsqueeze(dim=2).repeat(1, 1, 768)
-            last_state = hidden_states.gather(dim=1, index=pos_seq_len_expand).squeeze(dim=1)
+            last_state = torch.gather(hidden_states[-1], dim=1, index=pos_seq_len_expand).squeeze(dim=1)
             positive_score = self.linear(self.dropout(last_state))
             predictions = shift_logits.argmax(dim=-1)
         else:
@@ -134,9 +136,10 @@ class Gpt2SeqModel(nn.Module):
 
             cand_seq = torch.cat([src_seq, start_tensor, sampling_seq], dim=1)
             # TODO: manually construct the position ids for input & output
-            sampling_logits, hidden_states = self.transformer_module(cand_seq, None, None)
+            sampling_output = self.transformer_module(cand_seq, None, None, output_hidden_states=True)
+            hidden_states = torch.stack(list(sampling_output.hidden_states), dim=0)
             # lm labels should mask the source sentence language model
-            last_state = hidden_states.gather(dim=1, index=sampling_seq_len_expand).squeeze(dim=1)
+            last_state = torch.gather(hidden_states[-1], dim=1, index=sampling_seq_len_expand).squeeze(dim=1)
             negative_score = self.linear(self.dropout(last_state))
 
         cand_preds, cand_scores = None, None
@@ -157,7 +160,9 @@ class Gpt2SeqModel(nn.Module):
 
                         # concat them into one
                         cand_inp_seq = torch.cat([cand_src_seq, cand_start, current_cs], dim=1).contiguous()
-                        cand_logits, hidden_states = self.transformer_module(cand_inp_seq)
+                        cand_output = self.transformer_module(cand_inp_seq, output_hidden_states=True)
+                        cand_logits = cand_output.logits
+                        hidden_states = torch.stack(list(cand_output.hidden_states), dim=0)
                         # view as batch_size x cand_size
                         # TODO: note the candidate doesn't own a END symbol,
                         #  so we ignore the score form last word -> EOS and EOS -> pad
@@ -173,7 +178,7 @@ class Gpt2SeqModel(nn.Module):
 
                         current_cs_valid_len = src_seq_len + nonzero.sum(dim=1, keepdim=True).long()
                         current_cs_valid_len = current_cs_valid_len.unsqueeze(dim=2).repeat(1, 1, 768)
-                        last_state = hidden_states.gather(dim=1, index=current_cs_valid_len).squeeze(dim=1)
+                        last_state = torch.gather(hidden_states[-1], dim=1, index=current_cs_valid_len).squeeze(dim=1)
                         # 1 is pos, 0 is neg
                         current_rank_score = F.softmax(self.linear(last_state), dim=1)[:, 1]
                         current_cs_score = 1.0 * current_rank_score

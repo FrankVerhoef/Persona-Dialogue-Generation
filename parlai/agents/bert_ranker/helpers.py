@@ -7,8 +7,8 @@ from parlai.core.torch_ranker_agent import TorchRankerAgent
 from parlai.core.utils import _ellipse
 
 try:
-    from pytorch_pretrained_bert.modeling import BertLayer, BertConfig
-    from pytorch_pretrained_bert import BertModel  # NOQA
+    from transformers.modeling import BertLayer, BertConfig
+    from transformers import BertModel  # NOQA
 except ImportError:
     raise ImportError('This model requires that pytorch-pretrained-bert is '
                       'installed. Install with:\n '

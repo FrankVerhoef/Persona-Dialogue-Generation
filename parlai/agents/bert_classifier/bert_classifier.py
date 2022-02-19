@@ -8,7 +8,7 @@ from parlai.agents.bert_ranker.helpers import BertWrapper, get_bert_optimizer
 from parlai.core.torch_classifier_agent import TorchClassifierAgent
 
 try:
-    from pytorch_pretrained_bert import BertModel
+    from transformers import BertModel
 except ImportError:
     raise Exception(("BERT rankers needs pytorch-pretrained-BERT installed. \n "
                      "pip install pytorch-pretrained-bert"))
