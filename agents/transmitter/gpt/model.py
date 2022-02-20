@@ -203,7 +203,12 @@ class Gpt2SeqModel(nn.Module):
         past_dis = prior_dis
         with torch.no_grad():
             for step in range(self.longest_label):
-                logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+                output = self.transformer_module.forward(
+                    input_ids=past_input, 
+                    attention_mask=None, 
+                    token_type_ids=past_dis
+                )
+                logits, hidden_states = output[1], output[3]
                 # logits, _ = self.transformer_module.forward(past)
                 logits = logits[:, -1, :] / self.temperature
                 log_probs = F.log_softmax(logits, dim=-1)
@@ -269,7 +274,12 @@ class Gpt2SeqModel(nn.Module):
         src_len = prior_context.size(1) - 1
         last_logits = None
         for step in range(self.longest_label):
-            logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            output = self.transformer_module.forward(
+                input_ids=past_input, 
+                attention_mask=None, 
+                token_type_ids=past_dis
+            )
+            logits, hidden_states = output[1], output[3]
             last_logits= logits
             # logits, _ = self.transformer_module.forward(past)
             logits = logits[:, -1, :] / self.temperature
@@ -338,7 +348,12 @@ class Gpt2SeqModel(nn.Module):
         src_len = prior_context.size(1) - 1
         last_logits = None
         for step in range(self.longest_label):
-            logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            output = self.transformer_module.forward(
+                input_ids=past_input, 
+                attention_mask=None, 
+                token_type_ids=past_dis
+            )
+            logits, hidden_states = output[1], output[3]
             last_logits= logits
             # logits, _ = self.transformer_module.forward(past)
             logits = logits[:, -1, :] / self.temperature
@@ -414,9 +429,10 @@ class Gpt2SeqModel(nn.Module):
             start_token_tensor = prior_context.repeat(1, self.beam_size).view(batch_size * self.beam_size, -1)
             token_tensor = start_token_tensor
             for step in range(self.longest_label):
-                outputs, hidden_states = self.transformer_module.forward(token_tensor)
+                output = self.transformer_module.forward(token_tensor)
+                logits, hidden_states = output[1], output[3]
 
-                logits = outputs[:, -1, :]
+                logits = logits[:, -1, :]
                 log_probs = F.log_softmax(logits, dim=-1)
 
                 if 0 < self.no_repeat_ngram_size < step:
@@ -553,7 +569,8 @@ class Gpt2SeqModel(nn.Module):
         all_tokens = all_tokens.view(batch_size * turn_size, sen_size)
         # TODO: manually construct the position ids for input & output
         with torch.no_grad():
-            lm_logits, hidden_states = self.transformer_module.forward(all_tokens)
+            output = self.transformer_module.forward(all_tokens)
+            hidden_states = output[3]
             send_len = prev_len + send_tokens.ne(self.pad_idx).sum(dim=2, keepdim=True).view(batch_size * turn_size, -1)
             send_len_expand = send_len.unsqueeze(dim=2).repeat(1, 1, 768)
             # lm labels should mask the source sentence language model
